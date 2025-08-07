@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Tornado Spiral Meditation</title>
+    <style>
+        :root {
+            --glow-intensity: 2;
+            --wave-amplitude: 15;
+            --wave-frequency: 0.02;
+            --spiral-arms: 3;
+            --spiral-tightness: 0.5;
+            --spiral-speed: 1.5;
+            --spiral-height: 1.0;
+            --tornado-taper: 0.8;
+            --view-tilt-x: 15;
+            --view-tilt-y: 0;
+            --view-zoom: 1.0;
+            --primary-hue: 45;
+            --secondary-hue: 200;
+            --layer-opacity: 0.8;
+            --ambient-glow: 1;
+            --wave-distortion: 1;
+            --line-thickness: 1;
+            --ui-opacity: 0.95;
+            --spiral-direction: 1;
+            --perspective-depth: 800;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, 
+                hsl(var(--secondary-hue), 40%, 8%) 0%,
+                hsl(var(--secondary-hue), 60%, 4%) 50%,
+                hsl(var(--secondary-hue), 80%, 2%) 100%);
+            position: relative;
+            touch-action: none;
+        }
+
+        .wave-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+            perspective: calc(var(--perspective-depth) * 1px);
+        }
+
+        .wave-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .gear-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.08));
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.3));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 20px hsla(var(--primary-hue), 70%, 50%, 0.2);
+        }
+
+        .gear-toggle:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                0 0 30px hsla(var(--primary-hue), 80%, 60%, 0.4);
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.12));
+        }
+
+        .gear-icon {
+            width: 24px;
+            height: 24px;
+            fill: hsl(var(--primary-hue), 80%, 75%);
+            transition: all 0.3s ease;
+        }
+
+        .controls-panel {
+            position: fixed;
+            top: 20px;
+            right: 80px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05));
+            backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.2));
+            border-radius: 20px;
+            padding: 0;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-width: 360px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 
+                0 16px 64px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 40px hsla(var(--primary-hue), 60%, 50%, 0.1);
+            z-index: 1000;
+            pointer-events: auto;
+            transform: translateX(0);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .controls-panel.hidden {
+            transform: translateX(calc(100% + 20px));
+            pointer-events: none;
+        }
+
+        .controls-header {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.1)), 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05)));
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.1));
+            padding: 20px 25px 15px;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .controls-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent, 
+                hsla(var(--primary-hue), 70%, 80%, 0.05), 
+                transparent);
+            animation: shimmer 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .controls-title {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, 
+                hsl(var(--primary-hue), 90%, 85%), 
+                hsl(var(--primary-hue), 70%, 70%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .controls-subtitle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 300;
+            position: relative;
+            z-index: 2;
+        }
+
+        .controls-content {
+            padding: 20px 25px;
+            max-height: calc(90vh - 120px);
+            overflow-y: auto;
+        }
+
+        .info-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.08));
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.3));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 16px;
+            color: hsl(var(--primary-hue), 80%, 75%);
+            box-shadow: 
+                0 6px 24px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 15px hsla(var(--primary-hue), 70%, 50%, 0.2);
+        }
+
+        .info-toggle:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.12));
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                0 0 25px hsla(var(--primary-hue), 80%, 60%, 0.3);
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 70px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05));
+            backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.2));
+            border-radius: 15px;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11px;
+            max-width: 320px;
+            z-index: 1000;
+            pointer-events: auto;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 12px 48px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 30px hsla(var(--primary-hue), 60%, 50%, 0.1);
+        }
+
+        .info-panel.hidden {
+            transform: translateX(calc(-100% - 50px));
+            pointer-events: none;
+        }
+
+        .info-panel strong {
+            color: hsl(var(--primary-hue), 100%, 85%);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            color: hsl(var(--primary-hue), 100%, 85%);
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .control-item label {
+            color: rgba(255, 255, 255, 0.9);
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .control-item input[type="range"] {
+            flex: 1.5;
+            margin-left: 15px;
+            accent-color: hsl(var(--primary-hue), 100%, 70%);
+        }
+
+        .control-item select {
+            flex: 1.5;
+            margin-left: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .control-item .value-display {
+            min-width: 40px;
+            text-align: right;
+            color: hsl(var(--primary-hue), 100%, 75%);
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .preset-btn {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.1)),
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05)));
+            backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.2));
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .preset-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                hsla(var(--primary-hue), 80%, 80%, 0.2), 
+                transparent);
+            transition: left 0.6s ease;
+        }
+
+        .preset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 20px hsla(var(--primary-hue), 70%, 50%, 0.3);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.15)),
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.08)));
+            border-color: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.3));
+        }
+
+        .preset-btn:hover::before {
+            left: 100%;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .controls-panel {
+                right: 10px;
+                top: 70px;
+                min-width: calc(100vw - 40px);
+                max-width: calc(100vw - 40px);
+                max-height: 70vh;
+            }
+
+            .gear-toggle {
+                top: 10px;
+                right: 10px;
+                width: 45px;
+                height: 45px;
+            }
+
+            .info-panel {
+                bottom: 10px;
+                left: 60px;
+                max-width: calc(100vw - 90px);
+                font-size: 10px;
+            }
+
+            .info-toggle {
+                bottom: 10px;
+                left: 10px;
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+        }
+
+        /* Scrollbar styling */
+        .controls-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .controls-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .controls-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .controls-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="wave-container">
+        <canvas class="wave-canvas" id="waveCanvas"></canvas>
+    </div>
+    
+    <!-- Gear Toggle Button -->
+    <div class="gear-toggle" id="gearToggle">
+        <svg class="gear-icon" viewBox="0 0 24 24">
+            <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+        </svg>
+    </div>
+
+    <!-- Info Toggle Button -->
+    <div class="info-toggle" id="infoToggle">🌪️</div>
+    
+    <!-- Controls Panel -->
+    <div class="controls-panel" id="controlsPanel">
+        <div class="controls-header">
+            <div class="controls-title">Tornado Spiral</div>
+            <div class="controls-subtitle">3D Vortex Meditation</div>
+        </div>
+        <div class="controls-content">
+            <div class="control-group">
+                <h3>Interface</h3>
+                <div class="control-item">
+                    <label>UI Opacity</label>
+                    <input type="range" id="uiOpacity" min="0.1" max="1" step="0.05" value="0.95">
+                    <span class="value-display" id="uiOpacityValue">0.95</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>3D Perspective</h3>
+                <div class="control-item">
+                    <label>Tilt X (Vertical)</label>
+                    <input type="range" id="viewTiltX" min="-45" max="45" step="1" value="15">
+                    <span class="value-display" id="tiltXValue">15°</span>
+                </div>
+                <div class="control-item">
+                    <label>Tilt Y (Horizontal)</label>
+                    <input type="range" id="viewTiltY" min="-45" max="45" step="1" value="0">
+                    <span class="value-display" id="tiltYValue">0°</span>
+                </div>
+                <div class="control-item">
+                    <label>View Zoom</label>
+                    <input type="range" id="viewZoom" min="0.3" max="2.5" step="0.1" value="1.0">
+                    <span class="value-display" id="zoomValue">1.0</span>
+                </div>
+                <div class="control-item">
+                    <label>Perspective Depth</label>
+                    <input type="range" id="perspectiveDepth" min="300" max="1500" step="50" value="800">
+                    <span class="value-display" id="depthValue">800</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Tornado Structure</h3>
+                <div class="control-item">
+                    <label>Spiral Arms</label>
+                    <input type="range" id="spiralArms" min="1" max="8" step="1" value="3">
+                    <span class="value-display" id="armsValue">3</span>
+                </div>
+                <div class="control-item">
+                    <label>Spiral Height</label>
+                    <input type="range" id="spiralHeight" min="0.5" max="2" step="0.1" value="1.0">
+                    <span class="value-display" id="heightValue">1.0</span>
+                </div>
+                <div class="control-item">
+                    <label>Tornado Taper</label>
+                    <input type="range" id="tornadoTaper" min="0.2" max="1.5" step="0.1" value="0.8">
+                    <span class="value-display" id="taperValue">0.8</span>
+                </div>
+                <div class="control-item">
+                    <label>Spiral Tightness</label>
+                    <input type="range" id="spiralTightness" min="0.1" max="2" step="0.1" value="0.5">
+                    <span class="value-display" id="tightnessValue">0.5</span>
+                </div>
+                <div class="control-item">
+                    <label>Spiral Direction</label>
+                    <select id="spiralDirection">
+                        <option value="1">Clockwise</option>
+                        <option value="-1">Counter-clockwise</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Wave Distortion</h3>
+                <div class="control-item">
+                    <label>Wave Amplitude</label>
+                    <input type="range" id="waveAmplitude" min="2" max="50" step="1" value="15">
+                    <span class="value-display" id="amplitudeValue">15</span>
+                </div>
+                <div class="control-item">
+                    <label>Wave Frequency</label>
+                    <input type="range" id="waveFrequency" min="0.005" max="0.1" step="0.001" value="0.02">
+                    <span class="value-display" id="frequencyValue">0.02</span>
+                </div>
+                <div class="control-item">
+                    <label>Wave Distortion</label>
+                    <input type="range" id="waveDistortion" min="0.1" max="3" step="0.1" value="1">
+                    <span class="value-display" id="distortionValue">1.0</span>
+                </div>
+                <div class="control-item">
+                    <label>Line Thickness</label>
+                    <input type="range" id="lineThickness" min="0.2" max="4" step="0.1" value="1">
+                    <span class="value-display" id="thicknessValue">1.0</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Animation Flow</h3>
+                <div class="control-item">
+                    <label>Spiral Speed</label>
+                    <input type="range" id="spiralSpeed" min="0.1" max="5" step="0.1" value="1.5">
+                    <span class="value-display" id="speedValue">1.5</span>
+                </div>
+                <div class="control-item">
+                    <label>Glow Intensity</label>
+                    <input type="range" id="glowIntensity" min="0.5" max="8" step="0.1" value="2">
+                    <span class="value-display" id="glowValue">2.0</span>
+                </div>
+                <div class="control-item">
+                    <label>Layer Opacity</label>
+                    <input type="range" id="layerOpacity" min="0.2" max="1" step="0.05" value="0.8">
+                    <span class="value-display" id="opacityValue">0.8</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Color Vortex</h3>
+                <div class="control-item">
+                    <label>Primary Hue</label>
+                    <input type="range" id="primaryHue" min="0" max="360" step="1" value="45">
+                    <span class="value-display" id="primaryValue">45°</span>
+                </div>
+                <div class="control-item">
+                    <label>Secondary Hue</label>
+                    <input type="range" id="secondaryHue" min="0" max="360" step="1" value="200">
+                    <span class="value-display" id="secondaryValue">200°</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Tornado Presets</h3>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="applyPreset('dna')">DNA Helix</button>
+                    <button class="preset-btn" onclick="applyPreset('tornado')">Tornado</button>
+                    <button class="preset-btn" onclick="applyPreset('energy')">Energy Vortex</button>
+                    <button class="preset-btn" onclick="applyPreset('cosmic')">Cosmic Spiral</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel" id="infoPanel">
+        <strong>3D Tornado Spiral Meditation</strong><br>
+        Experience a vertical vortex from multiple viewing angles.<br>
+        Tilt and zoom to find your perfect perspective.<br>
+        <em>Like looking into the eye of a luminous tornado.</em>
+    </div>
+
+    <script>
+        class TornadoSpiral {
+            constructor() {
+                this.canvas = document.getElementById('waveCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.time = 0;
+                this.spiralPaths = [];
+                this.centerX = 0;
+                this.centerY = 0;
+                this.baseRadius = 0;
+                
+                this.setupCanvas();
+                this.setupControls();
+                this.setupToggleButtons();
+                this.generateTornadoSpirals();
+                this.animate();
+            }
+
+            setupCanvas() {
+                const resize = () => {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                    this.centerX = this.canvas.width / 2;
+                    this.centerY = this.canvas.height / 2;
+                    this.baseRadius = Math.min(this.canvas.width, this.canvas.height) * 0.15;
+                    this.generateTornadoSpirals();
+                };
+                resize();
+                window.addEventListener('resize', resize);
+            }
+
+            setupToggleButtons() {
+                const gearToggle = document.getElementById('gearToggle');
+                const controlsPanel = document.getElementById('controlsPanel');
+                
+                gearToggle.addEventListener('click', () => {
+                    controlsPanel.classList.toggle('hidden');
+                });
+
+                const infoToggle = document.getElementById('infoToggle');
+                const infoPanel = document.getElementById('infoPanel');
+                
+                infoToggle.addEventListener('click', () => {
+                    infoPanel.classList.toggle('hidden');
+                });
+
+                gearToggle.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    controlsPanel.classList.toggle('hidden');
+                });
+
+                infoToggle.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    infoPanel.classList.toggle('hidden');
+                });
+            }
+
+            setupControls() {
+                const controls = {
+                    uiOpacity: (value) => {
+                        document.documentElement.style.setProperty('--ui-opacity', value);
+                        document.getElementById('uiOpacityValue').textContent = parseFloat(value).toFixed(2);
+                    },
+                    viewTiltX: (value) => {
+                        document.documentElement.style.setProperty('--view-tilt-x', value);
+                        document.getElementById('tiltXValue').textContent = value + '°';
+                    },
+                    viewTiltY: (value) => {
+                        document.documentElement.style.setProperty('--view-tilt-y', value);
+                        document.getElementById('tiltYValue').textContent = value + '°';
+                    },
+                    viewZoom: (value) => {
+                        document.documentElement.style.setProperty('--view-zoom', value);
+                        document.getElementById('zoomValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    perspectiveDepth: (value) => {
+                        document.documentElement.style.setProperty('--perspective-depth', value);
+                        document.getElementById('depthValue').textContent = value;
+                    },
+                    spiralArms: (value) => {
+                        document.documentElement.style.setProperty('--spiral-arms', value);
+                        document.getElementById('armsValue').textContent = value;
+                        this.generateTornadoSpirals();
+                    },
+                    spiralHeight: (value) => {
+                        document.documentElement.style.setProperty('--spiral-height', value);
+                        document.getElementById('heightValue').textContent = parseFloat(value).toFixed(1);
+                        this.generateTornadoSpirals();
+                    },
+                    tornadoTaper: (value) => {
+                        document.documentElement.style.setProperty('--tornado-taper', value);
+                        document.getElementById('taperValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    spiralTightness: (value) => {
+                        document.documentElement.style.setProperty('--spiral-tightness', value);
+                        document.getElementById('tightnessValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    spiralDirection: (value) => {
+                        document.documentElement.style.setProperty('--spiral-direction', value);
+                    },
+                    waveAmplitude: (value) => {
+                        document.documentElement.style.setProperty('--wave-amplitude', value);
+                        document.getElementById('amplitudeValue').textContent = value;
+                    },
+                    waveFrequency: (value) => {
+                        document.documentElement.style.setProperty('--wave-frequency', value);
+                        document.getElementById('frequencyValue').textContent = parseFloat(value).toFixed(3);
+                    },
+                    waveDistortion: (value) => {
+                        document.documentElement.style.setProperty('--wave-distortion', value);
+                        document.getElementById('distortionValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    lineThickness: (value) => {
+                        document.documentElement.style.setProperty('--line-thickness', value);
+                        document.getElementById('thicknessValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    spiralSpeed: (value) => {
+                        document.documentElement.style.setProperty('--spiral-speed', value);
+                        document.getElementById('speedValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    glowIntensity: (value) => {
+                        document.documentElement.style.setProperty('--glow-intensity', value);
+                        document.getElementById('glowValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    layerOpacity: (value) => {
+                        document.documentElement.style.setProperty('--layer-opacity', value);
+                        document.getElementById('opacityValue').textContent = parseFloat(value).toFixed(2);
+                    },
+                    primaryHue: (value) => {
+                        document.documentElement.style.setProperty('--primary-hue', value);
+                        document.getElementById('primaryValue').textContent = value + '°';
+                    },
+                    secondaryHue: (value) => {
+                        document.documentElement.style.setProperty('--secondary-hue', value);
+                        document.getElementById('secondaryValue').textContent = value + '°';
+                    }
+                };
+
+                Object.entries(controls).forEach(([id, callback]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.addEventListener('input', (e) => callback(e.target.value));
+                        element.addEventListener('change', (e) => callback(e.target.value));
+                        callback(element.value);
+                    }
+                });
+            }
+
+            generateTornadoSpirals() {
+                this.spiralPaths = [];
+                const arms = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-arms'));
+                const spiralHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-height'));
+                
+                for (let i = 0; i < arms; i++) {
+                    this.spiralPaths.push({
+                        armIndex: i,
+                        angleOffset: (i * 2 * Math.PI) / arms,
+                        phase: Math.random() * Math.PI * 2,
+                        opacity: 0.9 - (i * 0.1),
+                        spiralLayers: this.generateVerticalLayers(i, spiralHeight)
+                    });
+                }
+            }
+
+            generateVerticalLayers(armIndex, spiralHeight) {
+                const layers = [];
+                const layerCount = Math.floor(12 * spiralHeight);
+                
+                for (let j = 0; j < layerCount; j++) {
+                    layers.push({
+                        layerIndex: j,
+                        heightRatio: j / (layerCount - 1), // 0 to 1 from bottom to top
+                        phase: (armIndex + j) * 0.2,
+                        opacity: 0.8 - (j * 0.04)
+                    });
+                }
+                return layers;
+            }
+
+            project3D(x, y, z) {
+                const tiltX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-tilt-x')) * Math.PI / 180;
+                const tiltY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-tilt-y')) * Math.PI / 180;
+                const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-zoom'));
+                
+                // Apply 3D rotation
+                const cosX = Math.cos(tiltX);
+                const sinX = Math.sin(tiltX);
+                const cosY = Math.cos(tiltY);
+                const sinY = Math.sin(tiltY);
+                
+                // Rotate around X axis
+                const y1 = y * cosX - z * sinX;
+                const z1 = y * sinX + z * cosX;
+                
+                // Rotate around Y axis
+                const x2 = x * cosY + z1 * sinY;
+                const z2 = -x * sinY + z1 * cosY;
+                
+                // Project to 2D with perspective
+                const perspective = 400;
+                const scale = perspective / (perspective + z2) * zoom;
+                
+                return {
+                    x: this.centerX + x2 * scale,
+                    y: this.centerY + y1 * scale,
+                    z: z2,
+                    scale: scale
+                };
+            }
+
+            drawTornadoSpiral(spiral) {
+                const amplitude = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wave-amplitude'));
+                const frequency = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wave-frequency'));
+                const distortion = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wave-distortion'));
+                const thickness = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--line-thickness'));
+                const tightness = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-tightness'));
+                const tornadoTaper = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tornado-taper'));
+                const spiralSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-speed'));
+                const direction = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-direction'));
+                const glowIntensity = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--glow-intensity'));
+                const primaryHue = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--primary-hue'));
+
+                spiral.spiralLayers.forEach((layer, layerIndex) => {
+                    this.ctx.save();
+                    
+                    // Calculate color based on height and arm
+                    const hueShift = (spiral.armIndex * 40 + layer.heightRatio * 120) % 360;
+                    const currentHue = (primaryHue + hueShift) % 360;
+                    
+                    this.ctx.shadowColor = `hsl(${currentHue}, 100%, 70%)`;
+                    this.ctx.shadowBlur = glowIntensity * 4;
+                    this.ctx.globalAlpha = spiral.opacity * layer.opacity;
+                    this.ctx.lineWidth = thickness * (1 + layer.heightRatio * 0.5);
+                    this.ctx.strokeStyle = `hsl(${currentHue}, 90%, ${80 - layer.heightRatio * 20}%)`;
+
+                    this.ctx.beginPath();
+
+                    let firstPoint = true;
+                    const maxAngle = Math.PI * 8 * tightness;
+                    const angleStep = 0.08;
+                    const tornadoHeight = this.canvas.height * 0.6;
+
+                    for (let angle = 0; angle <= maxAngle; angle += angleStep) {
+                        // Calculate 3D position
+                        const heightPos = (layer.heightRatio - 0.5) * tornadoHeight;
+                        
+                        // Tornado taper - narrower at top
+                        const taperFactor = 1 - (layer.heightRatio * tornadoTaper);
+                        const baseRadius = this.baseRadius * taperFactor;
+                        
+                        // Spiral outward as it goes up
+                        const spiralRadius = baseRadius * (1 + angle * tightness * 0.1);
+                        
+                        // Add wave distortion
+                        const waveComponent = Math.sin(angle * frequency + this.time * spiralSpeed + spiral.phase + layer.phase);
+                        const harmonicWave = Math.sin(angle * frequency * 2 + this.time * spiralSpeed * 1.2) * 0.4;
+                        const distortionWave = Math.sin(angle * frequency * 0.3 + this.time * spiralSpeed * 0.6) * distortion;
+                        
+                        const waveOffset = (waveComponent + harmonicWave + distortionWave) * amplitude;
+                        const radius = Math.max(0, spiralRadius + waveOffset);
+                        
+                        // 3D coordinates
+                        const finalAngle = angle * direction + spiral.angleOffset + this.time * spiralSpeed * 0.2;
+                        const x3d = radius * Math.cos(finalAngle);
+                        const y3d = heightPos;
+                        const z3d = radius * Math.sin(finalAngle);
+                        
+                        // Project to 2D
+                        const projected = this.project3D(x3d, y3d, z3d);
+                        
+                        if (firstPoint) {
+                            this.ctx.moveTo(projected.x, projected.y);
+                            firstPoint = false;
+                        } else {
+                            this.ctx.lineTo(projected.x, projected.y);
+                        }
+                    }
+                    
+                    this.ctx.stroke();
+                    this.ctx.restore();
+                });
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Sort spirals by depth for proper rendering order
+                const sortedSpirals = [...this.spiralPaths].sort((a, b) => {
+                    // Simple depth sorting - could be improved
+                    return a.armIndex - b.armIndex;
+                });
+                
+                sortedSpirals.forEach(spiral => {
+                    this.drawTornadoSpiral(spiral);
+                });
+                
+                this.time += 0.016;
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        function applyPreset(preset) {
+            const presets = {
+                dna: {
+                    viewTiltX: 25,
+                    viewTiltY: 15,
+                    viewZoom: 1.2,
+                    spiralArms: 2,
+                    spiralHeight: 1.5,
+                    tornadoTaper: 0.3,
+                    spiralTightness: 0.8,
+                    spiralDirection: 1,
+                    waveAmplitude: 12,
+                    waveFrequency: 0.03,
+                    waveDistortion: 0.6,
+                    lineThickness: 2,
+                    spiralSpeed: 1.2,
+                    glowIntensity: 4,
+                    layerOpacity: 0.9,
+                    primaryHue: 180,
+                    secondaryHue: 280
+                },
+                tornado: {
+                    viewTiltX: 35,
+                    viewTiltY: 0,
+                    viewZoom: 1.0,
+                    spiralArms: 3,
+                    spiralHeight: 1.2,
+                    tornadoTaper: 1.2,
+                    spiralTightness: 0.6,
+                    spiralDirection: -1,
+                    waveAmplitude: 20,
+                    waveFrequency: 0.015,
+                    waveDistortion: 1.5,
+                    lineThickness: 1.5,
+                    spiralSpeed: 2,
+                    glowIntensity: 3,
+                    layerOpacity: 0.7,
+                    primaryHue: 45,
+                    secondaryHue: 200
+                },
+                energy: {
+                    viewTiltX: 15,
+                    viewTiltY: 20,
+                    viewZoom: 1.4,
+                    spiralArms: 5,
+                    spiralHeight: 1.0,
+                    tornadoTaper: 0.6,
+                    spiralTightness: 1.2,
+                    spiralDirection: 1,
+                    waveAmplitude: 25,
+                    waveFrequency: 0.04,
+                    waveDistortion: 2,
+                    lineThickness: 1,
+                    spiralSpeed: 2.5,
+                    glowIntensity: 6,
+                    layerOpacity: 0.8,
+                    primaryHue: 320,
+                    secondaryHue: 120
+                },
+                cosmic: {
+                    viewTiltX: 5,
+                    viewTiltY: -10,
+                    viewZoom: 0.8,
+                    spiralArms: 4,
+                    spiralHeight: 1.8,
+                    tornadoTaper: 0.4,
+                    spiralTightness: 0.3,
+                    spiralDirection: 1,
+                    waveAmplitude: 8,
+                    waveFrequency: 0.01,
+                    waveDistortion: 0.8,
+                    lineThickness: 0.8,
+                    spiralSpeed: 0.8,
+                    glowIntensity: 2.5,
+                    layerOpacity: 0.85,
+                    primaryHue: 240,
+                    secondaryHue: 300
+                }
+            };
+
+            const config = presets[preset];
+            if (config) {
+                Object.entries(config).forEach(([key, value]) => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.value = value;
+                        element.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
+        }
+
+        // Initialize the tornado spiral system
+        document.addEventListener('DOMContentLoaded', () => {
+            new TornadoSpiral();
+        });
+    </script>
+</body>
+</html>
