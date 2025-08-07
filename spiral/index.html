@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiral Harmony Meditation</title>
+    <style>
+        :root {
+            --glow-intensity: 2;
+            --wave-amplitude: 30;
+            --wave-frequency: 0.02;
+            --spiral-arms: 5;
+            --spiral-tightness: 0.8;
+            --spiral-speed: 1.5;
+            --harmonic-ratio: 1.618;
+            --primary-hue: 45;
+            --secondary-hue: 200;
+            --layer-opacity: 0.8;
+            --ambient-glow: 1;
+            --wave-distortion: 1;
+            --line-thickness: 1;
+            --ui-opacity: 0.95;
+            --spiral-direction: 1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, 
+                hsl(var(--secondary-hue), 40%, 8%) 0%,
+                hsl(var(--secondary-hue), 60%, 4%) 50%,
+                hsl(var(--secondary-hue), 80%, 2%) 100%);
+            position: relative;
+            touch-action: none;
+        }
+
+        .wave-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .wave-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .gear-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.08));
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.3));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 20px hsla(var(--primary-hue), 70%, 50%, 0.2);
+        }
+
+        .gear-toggle:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                0 0 30px hsla(var(--primary-hue), 80%, 60%, 0.4);
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.12));
+        }
+
+        .gear-icon {
+            width: 24px;
+            height: 24px;
+            fill: hsl(var(--primary-hue), 80%, 75%);
+            transition: all 0.3s ease;
+        }
+
+        .controls-panel {
+            position: fixed;
+            top: 20px;
+            right: 80px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05));
+            backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.2));
+            border-radius: 20px;
+            padding: 0;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-width: 340px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 
+                0 16px 64px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 40px hsla(var(--primary-hue), 60%, 50%, 0.1);
+            z-index: 1000;
+            pointer-events: auto;
+            transform: translateX(0);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .controls-panel.hidden {
+            transform: translateX(calc(100% + 20px));
+            pointer-events: none;
+        }
+
+        .controls-header {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.1)), 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05)));
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.1));
+            padding: 20px 25px 15px;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .controls-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent, 
+                hsla(var(--primary-hue), 70%, 80%, 0.05), 
+                transparent);
+            animation: shimmer 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .controls-title {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, 
+                hsl(var(--primary-hue), 90%, 85%), 
+                hsl(var(--primary-hue), 70%, 70%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .controls-subtitle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 300;
+            position: relative;
+            z-index: 2;
+        }
+
+        .controls-content {
+            padding: 20px 25px;
+            max-height: calc(90vh - 120px);
+            overflow-y: auto;
+        }
+
+        .info-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.08));
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.3));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 16px;
+            color: hsl(var(--primary-hue), 80%, 75%);
+            box-shadow: 
+                0 6px 24px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 15px hsla(var(--primary-hue), 70%, 50%, 0.2);
+        }
+
+        .info-toggle:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.12));
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                0 0 25px hsla(var(--primary-hue), 80%, 60%, 0.3);
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 70px;
+            background: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05));
+            backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.2));
+            border-radius: 15px;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11px;
+            max-width: 320px;
+            z-index: 1000;
+            pointer-events: auto;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 12px 48px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 30px hsla(var(--primary-hue), 60%, 50%, 0.1);
+        }
+
+        .info-panel.hidden {
+            transform: translateX(calc(-100% - 50px));
+            pointer-events: none;
+        }
+
+        .info-panel strong {
+            color: hsl(var(--primary-hue), 100%, 85%);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            color: hsl(var(--primary-hue), 100%, 85%);
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .control-item label {
+            color: rgba(255, 255, 255, 0.9);
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .control-item input[type="range"] {
+            flex: 1.5;
+            margin-left: 15px;
+            accent-color: hsl(var(--primary-hue), 100%, 70%);
+        }
+
+        .control-item select {
+            flex: 1.5;
+            margin-left: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .control-item .value-display {
+            min-width: 40px;
+            text-align: right;
+            color: hsl(var(--primary-hue), 100%, 75%);
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .preset-btn {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.1)),
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.05)));
+            backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, calc(var(--ui-opacity) * 0.2));
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .preset-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                hsla(var(--primary-hue), 80%, 80%, 0.2), 
+                transparent);
+            transition: left 0.6s ease;
+        }
+
+        .preset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 20px hsla(var(--primary-hue), 70%, 50%, 0.3);
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.15)),
+                rgba(255, 255, 255, calc(var(--ui-opacity) * 0.08)));
+            border-color: rgba(255, 255, 255, calc(var(--ui-opacity) * 0.3));
+        }
+
+        .preset-btn:hover::before {
+            left: 100%;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .controls-panel {
+                right: 10px;
+                top: 70px;
+                min-width: calc(100vw - 40px);
+                max-width: calc(100vw - 40px);
+                max-height: 70vh;
+            }
+
+            .gear-toggle {
+                top: 10px;
+                right: 10px;
+                width: 45px;
+                height: 45px;
+            }
+
+            .info-panel {
+                bottom: 10px;
+                left: 60px;
+                max-width: calc(100vw - 90px);
+                font-size: 10px;
+            }
+
+            .info-toggle {
+                bottom: 10px;
+                left: 10px;
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+        }
+
+        /* Scrollbar styling */
+        .controls-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .controls-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .controls-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .controls-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="wave-container">
+        <canvas class="wave-canvas" id="waveCanvas"></canvas>
+    </div>
+    
+    <!-- Gear Toggle Button -->
+    <div class="gear-toggle" id="gearToggle">
+        <svg class="gear-icon" viewBox="0 0 24 24">
+            <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+        </svg>
+    </div>
+
+    <!-- Info Toggle Button -->
+    <div class="info-toggle" id="infoToggle">🌀</div>
+    
+    <!-- Controls Panel -->
+    <div class="controls-panel" id="controlsPanel">
+        <div class="controls-header">
+            <div class="controls-title">Spiral Harmony</div>
+            <div class="controls-subtitle">Sacred Geometry Meditation</div>
+        </div>
+        <div class="controls-content">
+            <div class="control-group">
+                <h3>Interface</h3>
+                <div class="control-item">
+                    <label>UI Opacity</label>
+                    <input type="range" id="uiOpacity" min="0.1" max="1" step="0.05" value="0.95">
+                    <span class="value-display" id="uiOpacityValue">0.95</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Spiral Geometry</h3>
+                <div class="control-item">
+                    <label>Spiral Arms</label>
+                    <input type="range" id="spiralArms" min="3" max="13" step="1" value="5">
+                    <span class="value-display" id="armsValue">5</span>
+                </div>
+                <div class="control-item">
+                    <label>Spiral Tightness</label>
+                    <input type="range" id="spiralTightness" min="0.3" max="2" step="0.1" value="0.8">
+                    <span class="value-display" id="tightnessValue">0.8</span>
+                </div>
+                <div class="control-item">
+                    <label>Spiral Direction</label>
+                    <select id="spiralDirection">
+                        <option value="1">Clockwise</option>
+                        <option value="-1">Counter-clockwise</option>
+                    </select>
+                </div>
+                <div class="control-item">
+                    <label>Harmonic Ratio</label>
+                    <input type="range" id="harmonicRatio" min="1" max="2.5" step="0.01" value="1.618">
+                    <span class="value-display" id="harmonicValue">1.618</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Wave Harmonics</h3>
+                <div class="control-item">
+                    <label>Wave Amplitude</label>
+                    <input type="range" id="waveAmplitude" min="5" max="80" step="2" value="30">
+                    <span class="value-display" id="amplitudeValue">30</span>
+                </div>
+                <div class="control-item">
+                    <label>Wave Frequency</label>
+                    <input type="range" id="waveFrequency" min="0.005" max="0.08" step="0.001" value="0.02">
+                    <span class="value-display" id="frequencyValue">0.02</span>
+                </div>
+                <div class="control-item">
+                    <label>Wave Distortion</label>
+                    <input type="range" id="waveDistortion" min="0.2" max="3" step="0.1" value="1">
+                    <span class="value-display" id="distortionValue">1.0</span>
+                </div>
+                <div class="control-item">
+                    <label>Line Thickness</label>
+                    <input type="range" id="lineThickness" min="0.3" max="3" step="0.1" value="1">
+                    <span class="value-display" id="thicknessValue">1.0</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Meditation Flow</h3>
+                <div class="control-item">
+                    <label>Spiral Speed</label>
+                    <input type="range" id="spiralSpeed" min="0.2" max="4" step="0.1" value="1.5">
+                    <span class="value-display" id="speedValue">1.5</span>
+                </div>
+                <div class="control-item">
+                    <label>Glow Intensity</label>
+                    <input type="range" id="glowIntensity" min="0.5" max="6" step="0.1" value="2">
+                    <span class="value-display" id="glowValue">2.0</span>
+                </div>
+                <div class="control-item">
+                    <label>Layer Opacity</label>
+                    <input type="range" id="layerOpacity" min="0.2" max="1" step="0.05" value="0.8">
+                    <span class="value-display" id="opacityValue">0.8</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Color Harmony</h3>
+                <div class="control-item">
+                    <label>Primary Hue</label>
+                    <input type="range" id="primaryHue" min="0" max="360" step="1" value="45">
+                    <span class="value-display" id="primaryValue">45°</span>
+                </div>
+                <div class="control-item">
+                    <label>Secondary Hue</label>
+                    <input type="range" id="secondaryHue" min="0" max="360" step="1" value="200">
+                    <span class="value-display" id="secondaryValue">200°</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Sacred Presets</h3>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="applyPreset('fibonacci')">Fibonacci</button>
+                    <button class="preset-btn" onclick="applyPreset('golden')">Golden Ratio</button>
+                    <button class="preset-btn" onclick="applyPreset('chakra')">Chakra Flow</button>
+                    <button class="preset-btn" onclick="applyPreset('galaxy')">Galaxy Spiral</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel" id="infoPanel">
+        <strong>Spiral Harmony Meditation</strong><br>
+        Experience synchronized spirals in perfect mathematical harmony.<br>
+        Based on sacred geometry and golden ratio principles.<br>
+        <em>Watch the spirals breathe and find your center.</em>
+    </div>
+
+    <script>
+        class SpiralHarmony {
+            constructor() {
+                this.canvas = document.getElementById('waveCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.time = 0;
+                this.spiralPaths = [];
+                this.centerX = 0;
+                this.centerY = 0;
+                this.maxRadius = 0;
+                
+                this.setupCanvas();
+                this.setupControls();
+                this.setupToggleButtons();
+                this.generateSpirals();
+                this.animate();
+            }
+
+            setupCanvas() {
+                const resize = () => {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                    this.centerX = this.canvas.width / 2;
+                    this.centerY = this.canvas.height / 2;
+                    this.maxRadius = Math.min(this.canvas.width, this.canvas.height) * 0.4;
+                    this.generateSpirals();
+                };
+                resize();
+                window.addEventListener('resize', resize);
+            }
+
+            setupToggleButtons() {
+                const gearToggle = document.getElementById('gearToggle');
+                const controlsPanel = document.getElementById('controlsPanel');
+                
+                gearToggle.addEventListener('click', () => {
+                    controlsPanel.classList.toggle('hidden');
+                });
+
+                const infoToggle = document.getElementById('infoToggle');
+                const infoPanel = document.getElementById('infoPanel');
+                
+                infoToggle.addEventListener('click', () => {
+                    infoPanel.classList.toggle('hidden');
+                });
+
+                gearToggle.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    controlsPanel.classList.toggle('hidden');
+                });
+
+                infoToggle.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    infoPanel.classList.toggle('hidden');
+                });
+            }
+
+            setupControls() {
+                const controls = {
+                    uiOpacity: (value) => {
+                        document.documentElement.style.setProperty('--ui-opacity', value);
+                        document.getElementById('uiOpacityValue').textContent = parseFloat(value).toFixed(2);
+                    },
+                    spiralArms: (value) => {
+                        document.documentElement.style.setProperty('--spiral-arms', value);
+                        document.getElementById('armsValue').textContent = value;
+                        this.generateSpirals();
+                    },
+                    spiralTightness: (value) => {
+                        document.documentElement.style.setProperty('--spiral-tightness', value);
+                        document.getElementById('tightnessValue').textContent = parseFloat(value).toFixed(1);
+                        this.generateSpirals();
+                    },
+                    spiralDirection: (value) => {
+                        document.documentElement.style.setProperty('--spiral-direction', value);
+                        this.generateSpirals();
+                    },
+                    harmonicRatio: (value) => {
+                        document.documentElement.style.setProperty('--harmonic-ratio', value);
+                        document.getElementById('harmonicValue').textContent = parseFloat(value).toFixed(3);
+                        this.generateSpirals();
+                    },
+                    waveAmplitude: (value) => {
+                        document.documentElement.style.setProperty('--wave-amplitude', value);
+                        document.getElementById('amplitudeValue').textContent = value;
+                    },
+                    waveFrequency: (value) => {
+                        document.documentElement.style.setProperty('--wave-frequency', value);
+                        document.getElementById('frequencyValue').textContent = parseFloat(value).toFixed(3);
+                    },
+                    waveDistortion: (value) => {
+                        document.documentElement.style.setProperty('--wave-distortion', value);
+                        document.getElementById('distortionValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    lineThickness: (value) => {
+                        document.documentElement.style.setProperty('--line-thickness', value);
+                        document.getElementById('thicknessValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    spiralSpeed: (value) => {
+                        document.documentElement.style.setProperty('--spiral-speed', value);
+                        document.getElementById('speedValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    glowIntensity: (value) => {
+                        document.documentElement.style.setProperty('--glow-intensity', value);
+                        document.getElementById('glowValue').textContent = parseFloat(value).toFixed(1);
+                    },
+                    layerOpacity: (value) => {
+                        document.documentElement.style.setProperty('--layer-opacity', value);
+                        document.getElementById('opacityValue').textContent = parseFloat(value).toFixed(2);
+                    },
+                    primaryHue: (value) => {
+                        document.documentElement.style.setProperty('--primary-hue', value);
+                        document.getElementById('primaryValue').textContent = value + '°';
+                    },
+                    secondaryHue: (value) => {
+                        document.documentElement.style.setProperty('--secondary-hue', value);
+                        document.getElementById('secondaryValue').textContent = value + '°';
+                    }
+                };
+
+                Object.entries(controls).forEach(([id, callback]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.addEventListener('input', (e) => callback(e.target.value));
+                        element.addEventListener('change', (e) => callback(e.target.value));
+                        callback(element.value);
+                    }
+                });
+            }
+
+            generateSpirals() {
+                this.spiralPaths = [];
+                const arms = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-arms'));
+                const harmonicRatio = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--harmonic-ratio'));
+                
+                for (let i = 0; i < arms; i++) {
+                    this.spiralPaths.push({
+                        armIndex: i,
+                        angleOffset: (i * 2 * Math.PI) / arms,
+                        phase: Math.random() * Math.PI * 2,
+                        harmonicMultiplier: Math.pow(harmonicRatio, i % 3),
+                        opacity: 0.9 - (i * 0.1),
+                        spiralLayers: this.generateSpiralLayers(i)
+                    });
+                }
+            }
+
+            generateSpiralLayers(armIndex) {
+                const layers = [];
+                const layerCount = 8;
+                
+                for (let j = 0; j < layerCount; j++) {
+                    layers.push({
+                        layerIndex: j,
+                        radiusMultiplier: 0.3 + (j * 0.1),
+                        phase: (armIndex + j) * 0.3,
+                        opacity: 0.8 - (j * 0.08)
+                    });
+                }
+                return layers;
+            }
+
+            drawSpiral(spiral) {
+                const amplitude = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wave-amplitude'));
+                const frequency = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wave-frequency'));
+                const distortion = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wave-distortion'));
+                const thickness = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--line-thickness'));
+                const tightness = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-tightness'));
+                const spiralSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-speed'));
+                const direction = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spiral-direction'));
+                const glowIntensity = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--glow-intensity'));
+                const primaryHue = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--primary-hue'));
+
+                spiral.spiralLayers.forEach((layer, layerIndex) => {
+                    this.ctx.save();
+                    
+                    // Calculate dynamic hue based on spiral arm and layer
+                    const hueShift = (spiral.armIndex * 25 + layerIndex * 8) % 360;
+                    const currentHue = (primaryHue + hueShift) % 360;
+                    
+                    this.ctx.shadowColor = `hsl(${currentHue}, 100%, 70%)`;
+                    this.ctx.shadowBlur = glowIntensity * 6;
+                    this.ctx.globalAlpha = spiral.opacity * layer.opacity;
+                    this.ctx.lineWidth = thickness * (1 + layerIndex * 0.1);
+                    this.ctx.strokeStyle = `hsl(${currentHue}, 85%, ${75 - layerIndex * 3}%)`;
+
+                    this.ctx.beginPath();
+
+                    let firstPoint = true;
+                    const maxAngle = Math.PI * 12 * tightness; // More rotations for tighter spirals
+                    const angleStep = 0.05;
+
+                    for (let angle = 0; angle <= maxAngle; angle += angleStep) {
+                        // Logarithmic spiral equation with harmonic distortion
+                        const baseRadius = layer.radiusMultiplier * this.maxRadius * Math.exp(angle * tightness * 0.1);
+                        
+                        // Add wave distortion along the spiral
+                        const waveComponent = Math.sin(angle * frequency * spiral.harmonicMultiplier + this.time * spiralSpeed + spiral.phase + layer.phase);
+                        const harmonicWave = Math.sin(angle * frequency * 2 + this.time * spiralSpeed * 1.3) * 0.5;
+                        const distortionWave = Math.sin(angle * frequency * 0.5 + this.time * spiralSpeed * 0.8) * distortion;
+                        
+                        const waveOffset = (waveComponent + harmonicWave + distortionWave) * amplitude;
+                        const radius = Math.max(0, baseRadius + waveOffset);
+                        
+                        // Convert to cartesian coordinates with rotation
+                        const finalAngle = angle * direction + spiral.angleOffset + this.time * spiralSpeed * 0.3;
+                        const x = this.centerX + radius * Math.cos(finalAngle);
+                        const y = this.centerY + radius * Math.sin(finalAngle);
+                        
+                        if (radius > this.maxRadius * 1.2) break; // Stop when spiral gets too large
+                        
+                        if (firstPoint) {
+                            this.ctx.moveTo(x, y);
+                            firstPoint = false;
+                        } else {
+                            this.ctx.lineTo(x, y);
+                        }
+                    }
+                    
+                    this.ctx.stroke();
+                    this.ctx.restore();
+                });
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.spiralPaths.forEach(spiral => {
+                    this.drawSpiral(spiral);
+                });
+                
+                this.time += 0.016; // ~60fps timing
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        function applyPreset(preset) {
+            const presets = {
+                fibonacci: {
+                    spiralArms: 8,
+                    spiralTightness: 1.2,
+                    spiralDirection: 1,
+                    harmonicRatio: 1.618,
+                    waveAmplitude: 25,
+                    waveFrequency: 0.015,
+                    waveDistortion: 0.8,
+                    lineThickness: 1.2,
+                    spiralSpeed: 1.2,
+                    glowIntensity: 3,
+                    layerOpacity: 0.9,
+                    primaryHue: 45,
+                    secondaryHue: 200
+                },
+                golden: {
+                    spiralArms: 5,
+                    spiralTightness: 0.8,
+                    spiralDirection: 1,
+                    harmonicRatio: 1.618,
+                    waveAmplitude: 35,
+                    waveFrequency: 0.02,
+                    waveDistortion: 1.2,
+                    lineThickness: 1.5,
+                    spiralSpeed: 1.5,
+                    glowIntensity: 4,
+                    layerOpacity: 0.8,
+                    primaryHue: 285,
+                    secondaryHue: 120
+                },
+                chakra: {
+                    spiralArms: 7,
+                    spiralTightness: 1.0,
+                    spiralDirection: -1,
+                    harmonicRatio: 2.0,
+                    waveAmplitude: 40,
+                    waveFrequency: 0.025,
+                    waveDistortion: 1.8,
+                    lineThickness: 1.0,
+                    spiralSpeed: 1.0,
+                    glowIntensity: 5,
+                    layerOpacity: 0.7,
+                    primaryHue: 320,
+                    secondaryHue: 60
+                },
+                galaxy: {
+                    spiralArms: 4,
+                    spiralTightness: 1.5,
+                    spiralDirection: 1,
+                    harmonicRatio: 1.4,
+                    waveAmplitude: 20,
+                    waveFrequency: 0.01,
+                    waveDistortion: 0.5,
+                    lineThickness: 0.8,
+                    spiralSpeed: 0.8,
+                    glowIntensity: 2.5,
+                    layerOpacity: 0.85,
+                    primaryHue: 220,
+                    secondaryHue: 280
+                }
+            };
+
+            const config = presets[preset];
+            if (config) {
+                Object.entries(config).forEach(([key, value]) => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.value = value;
+                        element.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
+        }
+
+        // Initialize the spiral harmony system
+        document.addEventListener('DOMContentLoaded', () => {
+            new SpiralHarmony();
+        });
+    </script>
+</body>
+</html>
